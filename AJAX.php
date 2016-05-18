@@ -25,7 +25,7 @@ require_once "HTML/AJAX/Serializer/Error.php";
 require_once "HTML/AJAX/Serializer/XML.php";
 require_once "HTML/AJAX/Serializer/PHP.php";
 require_once 'HTML/AJAX/Debug.php';
-    
+
 /**
  * OO AJAX Implementation for PHP
  *
@@ -47,14 +47,14 @@ class HTML_AJAX
      *
      * key is the exported name
      *
-     * row format is 
+     * row format is
      * <code>
      * array('className'=>'','exportedName'=>'','instance'=>'','exportedMethods=>'')
      * </code>
      *
      * @var object
      * @access private
-     */    
+     */
     var $_exportedInstances = array();
 
     /**
@@ -65,7 +65,7 @@ class HTML_AJAX
     var $serverUrl = false;
 
     /**
-     * What encoding your going to use for serializing data 
+     * What encoding your going to use for serializing data
      * from php being sent to javascript.
      *
      * @var string  JSON|PHP|Null
@@ -98,7 +98,7 @@ class HTML_AJAX
             'PHP'   => 'application/php-serialized',
             'Urlencoded' => 'application/x-www-form-urlencoded'
         );
-    
+
     /**
      * This is the debug variable that we will be passing the
      * HTML_AJAX_Debug instance to.
@@ -112,7 +112,7 @@ class HTML_AJAX
      * debug is called, instantiated then saves the file and such.
      */
     var $debugEnabled = false;
-    
+
     /**
      * This puts the error into a session variable is set to true.
      * set to false by default.
@@ -122,23 +122,25 @@ class HTML_AJAX
     var $debugSession = false;
 
     /**
-     * Boolean telling if the Content-Length header should be sent. 
+     * Boolean telling if the Content-Length header should be sent.
      *
-     * If your using a gzip handler on an output buffer, or run into 
-     * any compatability problems, try disabling this.
+     * For security reasons the Content-Length header should not be send
+     * If you run into compatability issues, try enabling this.
+     *
+     * https://www.owasp.org/index.php/HTTP_Request_Smuggling
      *
      * @access public
      * @var boolean
      */
-    var $sendContentLength = true;
+    var $sendContentLength = false;
 
     /**
-     * Make Generated code compatible with php4 by lowercasing all 
+     * Make Generated code compatible with php4 by lowercasing all
      * class/method names before exporting to JavaScript.
      *
-     * If you have code that works on php4 but not on php5 then setting 
-     * this flag can fix the problem. The recommended solution is too 
-     * specify the class and method names when registering the class 
+     * If you have code that works on php4 but not on php5 then setting
+     * this flag can fix the problem. The recommended solution is too
+     * specify the class and method names when registering the class
      * letting you have function case in php4 as well
      *
      * @access public
@@ -176,12 +178,12 @@ class HTML_AJAX
      * @var array
      */
     var $_allowedClasses = array();
-    
+
     /**
      * Holds serializer instances
      */
     var $_serializers = array();
-    
+
     /**
      * PHP callbacks we're exporting
      */
@@ -196,15 +198,15 @@ class HTML_AJAX
      * Set a class to handle requests
      *
      * @param object &$instance       An instance to export
-     * @param mixed  $exportedName    Name used for the javascript class, 
+     * @param mixed  $exportedName    Name used for the javascript class,
      *                                if false the name of the php class is used
-     * @param mixed  $exportedMethods If false all functions without a _ prefix 
-     *                                are exported, if an array only the methods 
+     * @param mixed  $exportedMethods If false all functions without a _ prefix
+     *                                are exported, if an array only the methods
      *                                listed in the array are exported
      *
      * @return void
      */
-    function registerClass(&$instance, $exportedName = false, 
+    function registerClass(&$instance, $exportedName = false,
         $exportedMethods = false)
     {
         $className = strtolower(get_class($instance));
@@ -232,9 +234,9 @@ class HTML_AJAX
     /**
      * Get a list of methods in a class to export
      *
-     * This function uses get_class_methods to get a list of callable methods, 
-     * so if you're on PHP5 extending this class with a class you want to export 
-     * should export its protected methods, while normally only its public methods 
+     * This function uses get_class_methods to get a list of callable methods,
+     * so if you're on PHP5 extending this class with a class you want to export
+     * should export its protected methods, while normally only its public methods
      * would be exported. All methods starting with _ are removed from the export list.
      * This covers PHP4 style private by naming as well as magic methods in either PHP4 or PHP5
      *
@@ -242,7 +244,7 @@ class HTML_AJAX
      *
      * @return array all methods of the class that are public
      * @access private
-     */    
+     */
     function _getMethodsToExport($className)
     {
         $funcs = get_class_methods($className);
@@ -276,7 +278,7 @@ class HTML_AJAX
     /**
      * Return the stub for a class
      *
-     * @param string $name name of the class to generated the stub for, 
+     * @param string $name name of the class to generated the stub for,
      * note that this is the exported name not the php class name
      *
      * @return string javascript proxy stub code for a single class
@@ -319,7 +321,7 @@ class HTML_AJAX
      *
      * @return string the js code
      * @access private
-     */    
+     */
     function _generateMethodStub($method)
     {
         $stub = "\t{$method}: function() { return ".
@@ -332,18 +334,18 @@ class HTML_AJAX
      *
      * @return string the js code
      * @access private
-     */    
+     */
     function populatePayload()
     {
         if (isset($_REQUEST['Iframe_XHR'])) {
             $this->_iframe = $_REQUEST['Iframe_XHR_id'];
-            if (isset($_REQUEST['Iframe_XHR_headers']) && 
+            if (isset($_REQUEST['Iframe_XHR_headers']) &&
                 is_array($_REQUEST['Iframe_XHR_headers'])) {
                 foreach ($_REQUEST['Iframe_XHR_headers'] as $header) {
 
                     $array    = explode(':', $header);
                     $array[0] = strip_tags(strtoupper(str_replace('-', '_', $array[0])));
-                    //only content-length and content-type can go in without an 
+                    //only content-length and content-type can go in without an
                     //http_ prefix - security
                     if (strpos($array[0], 'HTTP_') !== 0
                           && strcmp('CONTENT_TYPE', $array[0])
@@ -353,7 +355,7 @@ class HTML_AJAX
                     $_SERVER[$array[0]] = strip_tags($array[1]);
                 }
             }
-            $this->_payload = (isset($_REQUEST['Iframe_XHR_data']) 
+            $this->_payload = (isset($_REQUEST['Iframe_XHR_data'])
                 ? $_REQUEST['Iframe_XHR_data'] : '');
 
             if (isset($_REQUEST['Iframe_XHR_method'])) {
@@ -368,7 +370,7 @@ class HTML_AJAX
     /**
      * Handle a ajax request if needed
      *
-     * The current check is if GET variables c (class) and m (method) are set, 
+     * The current check is if GET variables c (class) and m (method) are set,
      * more options may be available in the future
      *
      * @return boolean true if an ajax call was handled, false otherwise
@@ -388,16 +390,16 @@ class HTML_AJAX
                 return true;
             }
         }
-        
+
         $class       = strtolower($this->_getVar('c'));
         $method      = $this->_getVar('m');
         $phpCallback = $this->_getVar('cb');
 
-        
+
         if (!empty($class) && !empty($method)) {
             if (!isset($this->_exportedInstances[$class])) {
                 // handle error
-                trigger_error('Unknown class: '. $class); 
+                trigger_error('Unknown class: '. $class);
             }
             if (!in_array(($this->php4CompatCase ? strtolower($method) : $method),
                 $this->_exportedInstances[$class]['exportedMethods'])) {
@@ -441,13 +443,13 @@ class HTML_AJAX
         if ($this->_interceptor !== false) {
             $args = $this->_processInterceptor($class, $method, $phpCallback, $args);
         }
-        
+
         if (!empty($class) && !empty($method)) {
             $ret = call_user_func_array(array(&$this->_exportedInstances[$class]['instance'], $method), $args);
         } else if (!empty($phpCallback)) {
             $ret = call_user_func_array($phpCallback, $args);
         }
-        
+
         restore_error_handler();
         $this->_sendResponse($ret);
         return true;
@@ -538,7 +540,7 @@ class HTML_AJAX
 
         //intercept to wrap iframe return data
         if ($this->_iframe) {
-            $output                  = $this->_iframeWrapper($this->_iframe, 
+            $output                  = $this->_iframeWrapper($this->_iframe,
                                          $output, $headers);
             $headers['Content-Type'] = 'text/html; charset=utf-8';
         }
@@ -553,7 +555,7 @@ class HTML_AJAX
      * @return   bool true if it's ok to send the header, false otherwise
      * @access   private
      */
-    function _sendContentLength() 
+    function _sendContentLength()
     {
         if (!$this->sendContentLength) {
             return false;
@@ -597,10 +599,10 @@ class HTML_AJAX
         if (isset($this->_serializers[$type])) {
             return $this->_serializers[$type];
         }
-    
+
         $class = 'HTML_AJAX_Serializer_'.$type;
 
-        if ( (version_compare(phpversion(), 5, '>') && !class_exists($class, false)) 
+        if ( (version_compare(phpversion(), 5, '>') && !class_exists($class, false))
             || (version_compare(phpversion(), 5, '<') && !class_exists($class)) ) {
             // include the class only if it isn't defined
             include_once "HTML/AJAX/Serializer/{$type}.php";
@@ -682,7 +684,7 @@ class HTML_AJAX
     {
         $this->_errorHandler($ex->getCode(), $ex->getMessage(), $ex->getFile(), $ex->getLine());
     }
-      
+
 
     /**
      * Error handler that sends it errors to the client side
@@ -734,11 +736,11 @@ class HTML_AJAX
             'var Iframe_XHR_headers = new Object();';
 
         foreach ($headers as $label => $value) {
-            $string .= 'Iframe_XHR_headers["'.preg_replace("/\r?\n/", "\\n", 
-                addslashes($label)).'"] = "'.preg_replace("/\r?\n/", "\\n", 
+            $string .= 'Iframe_XHR_headers["'.preg_replace("/\r?\n/", "\\n",
+                addslashes($label)).'"] = "'.preg_replace("/\r?\n/", "\\n",
                 addslashes($value))."\";\n";
         }
-        $string .= 'var Iframe_XHR_data = "' . preg_replace("/\r?\n/", "\\n", 
+        $string .= 'var Iframe_XHR_data = "' . preg_replace("/\r?\n/", "\\n",
             addslashes($data)) . '";</script>'
             . '<body onload="parent.HTML_AJAX_IframeXHR_instances[\''.$id.'\']'
             . '.isLoaded(Iframe_XHR_headers, Iframe_XHR_data);"></body></html>';
@@ -817,7 +819,7 @@ class HTML_AJAX
         }
         if (isset($url_parts['port'])) {
             $port = $url_parts['port'];
-        } else { 
+        } else {
             $port = getservbyname(strtolower($url_parts['scheme']), 'tcp');
             if ($port === false) {
                 trigger_error('Grab proxy: Unknown port or service, defaulting to 80', E_USER_WARNING);
@@ -896,7 +898,7 @@ class HTML_AJAX
         }
         $this->_allowedClasses = array_unique($this->_allowedClasses);
     }
-    
+
     /**
      * Checks that the given callback is callable and allowed to be called
      *
@@ -913,10 +915,10 @@ class HTML_AJAX
         $sig = md5(serialize($callback));
         return isset($this->_validCallbacks[$sig]);
     }
-    
+
     /**
      * Register a callback so it may be called from JS
-     * 
+     *
      * @param callback $callback the callback to register
      *
      * @access public
@@ -933,7 +935,7 @@ class HTML_AJAX
      * Currently just strips whitespace and comments, needs to remain fast
      * Strips comments only if they are not preceeded by code
      * Strips /*-style comments only if they span over more than one line
-     * Since strings cannot span over multiple lines, it cannot be defeated by a 
+     * Since strings cannot span over multiple lines, it cannot be defeated by a
      * string containing /*
      *
      * @param string $input Javascript to pack
@@ -941,7 +943,7 @@ class HTML_AJAX
      * @access public
      * @return string packed javascript
      */
-    function packJavaScript($input) 
+    function packJavaScript($input)
     {
         $stripPregs    = array(
             '/^\s*$/',
@@ -993,22 +995,22 @@ class HTML_AJAX
     /**
      * Set an interceptor class
      *
-     * An interceptor class runs during the process of handling a request, 
-     * it allows you to run security checks globally. It also allows you to 
+     * An interceptor class runs during the process of handling a request,
+     * it allows you to run security checks globally. It also allows you to
      * rewrite parameters
      *
-     * You can throw errors and exceptions in your intercptor methods and 
+     * You can throw errors and exceptions in your intercptor methods and
      * they will be passed to javascript
-     * 
+     *
      * You can add interceptors are 3 levels
-     * For a particular class/method, this is done by add a method to you class 
+     * For a particular class/method, this is done by add a method to you class
      *   named ClassName_MethodName($params)
      * For a particular class, method ClassName($methodName,$params)
      * Globally, method intercept($className,$methodName,$params)
-     * 
+     *
      * Only one match is done, using the most specific interceptor
      *
-     * All methods have to return $params, if you want to empty all of the 
+     * All methods have to return $params, if you want to empty all of the
      * parameters return an empty array
      *
      * @param Object $instance an instance of you interceptor class
@@ -1017,7 +1019,7 @@ class HTML_AJAX
      * @access public
      * @return void
      */
-    function setInterceptor($instance) 
+    function setInterceptor($instance)
     {
         $this->_interceptor = $instance;
     }
@@ -1034,7 +1036,7 @@ class HTML_AJAX
      * @access private
      * @return array Updated params
      */
-    function _processInterceptor($className,$methodName,$callback,$params) 
+    function _processInterceptor($className,$methodName,$callback,$params)
     {
 
         $m = $className.'_'.$methodName;
@@ -1065,7 +1067,7 @@ class HTML_AJAX
  * @access public
  * @return bool
  */
-function HTML_AJAX_Class_exists($class, $autoload) 
+function HTML_AJAX_Class_exists($class, $autoload)
 {
     if (function_exists('interface_exists')) {
         return class_exists($class, $autoload);

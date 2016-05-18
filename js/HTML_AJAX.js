@@ -1789,7 +1789,7 @@ HTML_AJAX_HttpClient.prototype = {
 			}
 			var payload = this.request.getSerializedPayload();
 			if (payload) {
-				this.xmlhttp.setRequestHeader('Content-Length', payload.length);
+				this.xmlhttp.setRequestHeader('X-Content-Length', payload.length);
 			}
 			this.xmlhttp.send(payload);
 
